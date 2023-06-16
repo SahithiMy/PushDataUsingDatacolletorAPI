@@ -62,9 +62,6 @@ func main() {
 		if data[i]["source_fqdn"] == nil {
 			data[i]["source_fqdn"] = ""
 		}
-		if data[i]["chef_tags"] == nil {
-			data[i]["chef_tags"] = []string{}
-		}
 		delete(data[i], "id")
 		data[i] = getProfiles(data[i])
 		data[i] = getEndTime(data[i])
