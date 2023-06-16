@@ -49,19 +49,6 @@ func main() {
 		data[i]["type"] = "inspec_report"
 		data[i]["node_uuid"] = data[i]["node_id"]
 		data[i]["report_uuid"] = data[i]["id"]
-		data[i]["fqdn"] = data[i]["node_name"]
-		if data[i]["chef_tags"] == nil {
-			data[i]["chef_tags"] = []string{}
-		}
-		if data[i]["recipes"] == nil {
-			data[i]["recipes"] = []string{}
-		}
-		if data[i]["ipaddress"] == nil {
-			data[i]["ipaddress"] = ""
-		}
-		if data[i]["source_fqdn"] == nil {
-			data[i]["source_fqdn"] = ""
-		}
 		delete(data[i], "id")
 		data[i] = getProfiles(data[i])
 		data[i] = getEndTime(data[i])
@@ -125,29 +112,11 @@ func debug_on() bool {
 
 func getProfiles(data map[string]interface{}) map[string]interface{} {
 	for _, profile := range data["profiles"].([]interface{}) {
-
 		if profileMap, ok := profile.(map[string]interface{}); ok {
-
-			if profileMap["supports"] == nil {
-				profileMap["supports"] = []string{}
-			}
-			if profileMap["maintainer"] == nil {
-				profileMap["maintainer"] = ""
-			}
-			if profileMap["groups"] == nil {
-				profileMap["groups"] = []string{}
-			}
-			if profileMap["license"] == nil {
-				profileMap["license"] = ""
-			}
 			for _, control := range profileMap["controls"].([]interface{}) {
 				if controls, ok := control.(map[string]interface{}); ok {
 					controls["tags"] = []string{}
 					delete(controls, "tags")
-					if controls["refs"] == nil {
-						controls["refs"] = []string{}
-						delete(controls, "refs")
-					}
 				}
 			}
 
@@ -158,9 +127,7 @@ func getProfiles(data map[string]interface{}) map[string]interface{} {
 
 func getEndTime(data map[string]interface{}) map[string]interface{} {
 	if endtime, ok := data["end_time"].(map[string]interface{}); ok {
-
 		name := endtime["seconds"]
-
 		str := fmt.Sprintf("%v", name)
 		intVal, err := strconv.ParseFloat(str, 64)
 		if err != nil {
