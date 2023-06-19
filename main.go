@@ -16,82 +16,19 @@ import (
 
 func main() {
 
-	filePath := "2023-6-12-15.json"
+	filePath := "client-data.json"
 
-	// Read the JSON file
-	jsonFile, err := os.Open(filePath)
-	if err != nil {
-		fmt.Println("Error opening JSON file:", err)
-		return
-	}
-	defer jsonFile.Close()
-
-	jsonData, err := ioutil.ReadAll(jsonFile)
-	if err != nil {
-		fmt.Println("Error reading JSON file:", err)
-		return
-	}
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
-
-	// Set up the request
-	var data []map[string]interface{}
-	err = json.Unmarshal(jsonData, &data)
-	if err != nil {
-		log.Fatalf("Error unmarshaling JSON data: %v", err)
 	}
 	client := &http.Client{Transport: tr}
 	url := "https://ec2-13-208-220-145.ap-northeast-3.compute.amazonaws.com/api/v0/events/data-collector"
 	token := "yWTSCdCOQYSHVhJOLyQv6JSwakw="
 
-	for i := range data {
-		if data[i]["type"] == nil {
-			data[i]["type"] = "inspec_report"
-		}
-		if data[i]["node_uuid"] == nil {
-			data[i]["node_uuid"] = data[i]["node_id"]
-		}
-		if data[i]["report_uuid"] == nil {
-			data[i]["report_uuid"] = data[i]["id"]
-			delete(data[i], "id")
-		}
-		data[i] = getProfiles(data[i])
-		data[i] = getEndTime(data[i])
+	// Read the JSON file
+	data := getData(filePath)
 
-		var bodyJSON io.Reader = nil
-		if data[i] != nil {
-			var err error
-			// TODO: @afiune check panic!?
-			bodyJSON, err = JSONReader(data[i])
-			if err != nil {
-				return
-			}
-		}
-		request, err := http.NewRequest("POST", url, bodyJSON)
-
-		if err != nil {
-			fmt.Println("Error creating HTTP request:", err)
-			return
-		}
-		request.Header.Add("api-token", token)
-		request.Header.Add("Content-Type", "application/json")
-		request.Header.Add("Accept", "*/*")
-
-		// Send the request
-		response, err := client.Do(request)
-		if err != nil {
-			fmt.Println("Error sending HTTP request:", err)
-			return
-		}
-
-		// Check the response
-		if response.StatusCode == 200 {
-			fmt.Println("DataCollector API call successful", response.Status, i)
-		} else {
-			fmt.Println("DataCollector API call failed", response.Status)
-		}
-	}
+	structureComplianceReport(data, client, url, token)
 
 }
 
@@ -147,4 +84,80 @@ func getEndTime(data map[string]interface{}) map[string]interface{} {
 
 	}
 	return data
+}
+
+func apiRequest(data map[string]interface{}, client *http.Client, url string, token string) *http.Response {
+
+	var bodyJSON io.Reader = nil
+	if data != nil {
+		var err error
+		// TODO: @afiune check panic!?
+		bodyJSON, err = JSONReader(data)
+		if err != nil {
+			return nil
+		}
+	}
+	request, err := http.NewRequest("POST", url, bodyJSON)
+
+	if err != nil {
+		fmt.Println("Error creating HTTP request:", err)
+		return nil
+	}
+	request.Header.Add("api-token", token)
+	request.Header.Add("Content-Type", "application/json")
+	request.Header.Add("Accept", "*/*")
+
+	// Send the request
+	response, err := client.Do(request)
+	if err != nil {
+		fmt.Println("Error sending HTTP request:", err)
+		return nil
+	}
+	return response
+}
+
+func getData(filePath string) []map[string]interface{} {
+	jsonFile, err := os.Open(filePath)
+	if err != nil {
+		fmt.Println("Error opening JSON file:", err)
+		return nil
+	}
+	defer jsonFile.Close()
+
+	jsonData, err := ioutil.ReadAll(jsonFile)
+	if err != nil {
+		fmt.Println("Error reading JSON file:", err)
+		return nil
+	}
+	// Set up the request
+	var data []map[string]interface{}
+	err = json.Unmarshal(jsonData, &data)
+	if err != nil {
+		log.Fatalf("Error unmarshaling JSON data: %v", err)
+	}
+	return data
+}
+
+func structureComplianceReport(data []map[string]interface{}, client *http.Client, url string, token string) {
+	for i := range data {
+		if data[i]["type"] == nil {
+			data[i]["type"] = "inspec_report"
+		}
+		if data[i]["node_uuid"] == nil {
+			data[i]["node_uuid"] = data[i]["node_id"]
+		}
+		if data[i]["report_uuid"] == nil {
+			data[i]["report_uuid"] = data[i]["id"]
+			delete(data[i], "id")
+		}
+		data[i] = getProfiles(data[i])
+		data[i] = getEndTime(data[i])
+		response := apiRequest(data[i], client, url, token)
+		// Check the response
+		if response.StatusCode == 200 {
+			fmt.Println("DataCollector API call successful", response.Status, i)
+		} else {
+			fmt.Println("DataCollector API call failed", response.Status)
+		}
+	}
 }
