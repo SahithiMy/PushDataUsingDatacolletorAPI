@@ -16,7 +16,7 @@ import (
 
 func main() {
 
-	filePath := "client-data.json"
+	filePath := "2023-6-12-15.json"
 
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
