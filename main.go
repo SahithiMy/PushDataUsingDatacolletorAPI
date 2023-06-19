@@ -46,10 +46,16 @@ func main() {
 	token := "yWTSCdCOQYSHVhJOLyQv6JSwakw="
 
 	for i := range data {
-		data[i]["type"] = "inspec_report"
-		data[i]["node_uuid"] = data[i]["node_id"]
-		data[i]["report_uuid"] = data[i]["id"]
-		delete(data[i], "id")
+		if data[i]["type"] == nil {
+			data[i]["type"] = "inspec_report"
+		}
+		if data[i]["node_uuid"] == nil {
+			data[i]["node_uuid"] = data[i]["node_id"]
+		}
+		if data[i]["report_uuid"] == nil {
+			data[i]["report_uuid"] = data[i]["id"]
+			delete(data[i], "id")
+		}
 		data[i] = getProfiles(data[i])
 		data[i] = getEndTime(data[i])
 
